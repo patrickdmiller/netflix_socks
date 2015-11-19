@@ -1,14 +1,17 @@
 
+  #define DEBUG 2
+
 // ======================== LIBS ==============================
 #include <avr/power.h>
 #include <avr/sleep.h>
 #include <Adafruit_NeoPixel.h>
 
 //for debugging lcd display
-#include <LiquidCrystal.h>
-
+#if DEBUG == 1
+  #include <LiquidCrystal.h>
+#endif
 // ======================== PINS ==============================
-//for the indicator light is a neopixel
+//for the indicator light its a neopixel
 #define INDICATOR_PIN 8
 #define SOFT_SWITCH_PIN 3
 
@@ -46,7 +49,9 @@ Adafruit_NeoPixel indicator = Adafruit_NeoPixel(1, INDICATOR_PIN);
 uint8_t color = 255;
 
 //LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
-LiquidCrystal lcd(5, 6 , 10, 11, 12, 13);
+#if DEBUG == 1
+  LiquidCrystal lcd(5, 6 , 10, 11, 12, 13);
+#endif
 volatile bool cpuSleepFlag = true;
 
 int userSleepState = 0; //0 awake, 1 falling asleep, 2 asleep
@@ -56,7 +61,6 @@ int readDelay = 50; //read accelerometer every 50 ms
 int windowDelay = 2000; //compute displacement every window
 int irDebugDelay = 2000;
 bool newWindow = true;
-
 
 //accelerometer values
 int pxVal = 0;
@@ -82,16 +86,28 @@ void setup() {
   indicator.begin();
   indicator.setBrightness(100); 
   //debug lcd
-  lcd.begin(16, 2);
+#if DEBUG == 1
+    lcd.begin(16, 2);
+#endif
+#if DEBUG == 2
+     pinMode(13, OUTPUT);
+     digitalWrite(13, HIGH);
+#endif
+ 
   //start asleep
   cpuSleepNow();
+
 }
 
 // ======================== LOOP ==============================
 
 void loop() {
+#if DEBUG == 2
+     digitalWrite(13, HIGH);
+#endif
   indicatorHandler();
   softSwitchHandler();
+  sleepHandler();
 
   //if a window time is up, make it a new window for a sliding window average
   if (millis() - windowTime > windowDelay) {
@@ -102,29 +118,29 @@ void loop() {
   //if we've reached the readDelay, read accelerometer
   if (millis() - nextReadTime > readDelay) {
     nextReadTime = millis();
-//    accelerometerHandler();
+   // accelerometerHandler();
   }
   
   //for debug, just blast IR every X seconds
   if (millis() - irDebugTime > irDebugDelay) {
-//    IR_transmit_pwr();
+    irDebugTime = millis();
+#if DEBUG == 2
+    digitalWrite(13, LOW);
+    delay(100);
+    digitalWrite(13, HIGH);
+#endif
+    IR_transmit_pwr();
   }
   
-  //a little delay
-  delay(100);
-  digitalWrite(IR_PIN, HIGH);
-  delay(100);
-      IR_transmit_pwr();
-  digitalWrite(IR_PIN, LOW);
-    delay(1000);
+  
 
 }
+
+// ======================== SOFT SWITCH ==============================
 void softSwitchHandler(){
   if(digitalRead(SOFT_SWITCH_PIN) == LOW && millis()-cpuAwoken > 1000){
     //its held down. 
     cpuSleepNow();
-  }else{
-  
   }
 }
 
@@ -138,20 +154,14 @@ void accelerometerHandler() {
   //if its a new iwn
   if (newWindow) {
     //just set the values to what they currently are
-    lcd.clear();
-    if (userSleepState == 2) {
-      lcd.setCursor(0, 0);
-      lcd.print("SLEEP");
-    }
+#if DEBUG == 1
+      lcd.clear();
+
     //    Serial.print(movementDisplacement);
     //    Serial.println(" movement in last second");
     lcd.setCursor(0, 1);
     lcd.print(movementDisplacement);
-    if (movementDisplacement > 255) {
-     // analogWrite(9, 255);
-    } else {
-     // analogWrite(9, movementDisplacement);
-    }
+#endif
     if (movementDisplacement < threshold) {
       userSleepState = 1;
     } else {
@@ -161,7 +171,7 @@ void accelerometerHandler() {
     if (userSleepState == 1) {
       consecutivePossibleSleeps++;
       if (consecutivePossibleSleeps > ((1000 / windowDelay) * 60 * thresholdTime)) {
-        detectedSleep();
+        userSleepState = 2;
       } //120 per minute
     } else {
       consecutivePossibleSleeps = 0;
@@ -178,7 +188,18 @@ void accelerometerHandler() {
     movementDisplacement += abs(xVal - pxVal) + abs(yVal - pyVal) + abs(zVal - pzVal);
   }
 }
-
+// ======================== USER SLEEP ==============================
+void sleepHandler(){
+#if DEBUG == 1  
+  if(userSleepState == 2){
+    lcd.setCursor(0,0);
+    lcd.print("SLEEP");
+  }else if(userSleepState == 1){
+    lcd.setCursor(0,0);
+    lcd.print("MAYBE SLEEP");
+  }
+#endif
+}
 
 // ======================== INDICATOR ==============================
 
@@ -196,30 +217,27 @@ void indicatorHandler(){
 
 void cpuSleepNow() {  
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);   // sleep mode is set here  
-    sleep_enable();          // enables the sleep bit in the mcucr register  
+    sleep_enable();
+    delay(100);
     indicator.clear();
-    attachInterrupt(digitalPinToInterrupt(3),pinInterrupt, LOW); // use interrupt 0 (pin 2) and run function  
-    sleep_mode();            // here the device is actually put to sleep!!  
+#if DEBUG == 2
+    digitalWrite(13, LOW);
+#endif
+    attachInterrupt(digitalPinToInterrupt(3),pinInterrupt, FALLING);
+    sleep_mode();
     // THE PROGRAM CONTINUES FROM HERE AFTER WAKING UP  
-    sleep_disable();         // first thing after waking from sleep: disable sleep...  
-    detachInterrupt(digitalPinToInterrupt(3));      // disables interrupt 0 on pin 2 so the wakeUpNow code will not be executed during normal running time.  
+    sleep_disable();
+    detachInterrupt(digitalPinToInterrupt(3));
 }  
 
 
 void pinInterrupt()  
 {  
-//    detachInterrupt(digitalPinToInterrupt(3));  
-//    attachInterrupt(digitalPinToInterrupt(3), pinInterrupt, HIGH);  
-    cpuSleepFlag = false;
     cpuAwoken = millis();
 }  
 
 
-void detectedSleep() {
-  userSleepState = 2;
-}
-
-//==
+// ======================== IR ==============================
 void pulseIR(long microsecs) {
   while (microsecs > 0) {
     // 38 kHz is about 13 microseconds high and 13 microseconds low
