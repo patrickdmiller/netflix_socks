@@ -46,7 +46,10 @@ int pulse_widths[NUM_PULSES][2] = {
 // ======================== VARS ==============================
 
 Adafruit_NeoPixel indicator = Adafruit_NeoPixel(1, INDICATOR_PIN);
-uint8_t color = 255;
+///color for each state.
+uint8_t colors[3][3] = {{1, 1, 1}, {1, 1, 1}, {1, 0, 0}}; //color multiplier per state, 1,1,1 is white, 1,0,0, is red, etc.
+uint8_t colorState = 255;
+uint8_t colorPulseIncrement = -1;
 
 //LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 #if DEBUG == 1
@@ -132,9 +135,6 @@ void loop() {
 #endif
     IR_transmit_pwr();
   }
-  
-  
-
 }
 
 // ======================== SOFT SWITCH ==============================
@@ -213,11 +213,13 @@ void sleepHandler(){
 
 void indicatorHandler(){
   //pulse
-  color--;
-  if(color < 1){
-    color = 255;
+  colorState+=colorPulseIncrement;
+  if(colorState < 1){
+    colorPulseIncrement = 1;
+  }else if(colorState >254){
+    colorPulseIncrement = -1;
   }
-  indicator.setPixelColor(0,color,color,color);
+  indicator.setPixelColor(0,colorState * colors[userSleepState][0], colorState * colors[userSleepState][1], colorState * colors[userSleepState][2]);
   indicator.show();
 }
 
