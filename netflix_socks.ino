@@ -55,11 +55,12 @@ uint8_t color = 255;
 volatile bool cpuSleepFlag = true;
 
 int userSleepState = 0; //0 awake, 1 falling asleep, 2 asleep
-
-unsigned long nextReadTime, windowTime, irDebugTime, cpuAwoken;
+bool userReallyAsleep = false;
+unsigned long nextReadTime, windowTime, irDebugTime, cpuAwoken, userReallyAsleepStart;
 int readDelay = 50; //read accelerometer every 50 ms
 int windowDelay = 2000; //compute displacement every window
 int irDebugDelay = 2000;
+int userReallyAsleepDelay = 1 * 60 * 1000; // 1 minute
 bool newWindow = true;
 
 //accelerometer values
@@ -190,6 +191,13 @@ void accelerometerHandler() {
 }
 // ======================== USER SLEEP ==============================
 void sleepHandler(){
+  if(userSleepState == 2){
+    if(millis() - userReallyAsleepStart > userReallyAsleepDelay){
+      //the user is really asleep. fire off IR. 
+    }
+  }else{
+    userReallyAsleepStart = millis();
+  }
 #if DEBUG == 1  
   if(userSleepState == 2){
     lcd.setCursor(0,0);
