@@ -72,7 +72,6 @@ int pyVal = 0;
 int pzVal = 0;
 int movementDisplacement = 0;
 int consecutivePossibleSleeps = 0;
-
 int threshold = 500; //amount of movement that sleep is less than
 int thresholdTime = 1; // in minutes
 
@@ -112,7 +111,7 @@ void loop() {
   indicatorHandler();
   softSwitchHandler();
   sleepHandler();
-
+  irHandler();
   //if a window time is up, make it a new window for a sliding window average
   if (millis() - windowTime > windowDelay) {
     windowTime = millis();
@@ -123,17 +122,6 @@ void loop() {
   if (millis() - nextReadTime > readDelay) {
     nextReadTime = millis();
    // accelerometerHandler();
-  }
-  
-  //for debug, just blast IR every X seconds
-  if (millis() - irDebugTime > irDebugDelay) {
-    irDebugTime = millis();
-#if DEBUG == 2
-    digitalWrite(13, LOW);
-    delay(100);
-    digitalWrite(13, HIGH);
-#endif
-    IR_transmit_pwr();
   }
 }
 
@@ -178,7 +166,6 @@ void accelerometerHandler() {
       consecutivePossibleSleeps = 0;
     }
 
-
     pxVal = xVal;
     pyVal = yVal;
     pzVal = zVal;
@@ -193,7 +180,7 @@ void accelerometerHandler() {
 void sleepHandler(){
   if(userSleepState == 2){
     if(millis() - userReallyAsleepStart > userReallyAsleepDelay){
-      //the user is really asleep. fire off IR. 
+      userReallyAsleep = true;
     }
   }else{
     userReallyAsleepStart = millis();
@@ -237,6 +224,9 @@ void cpuSleepNow() {
     sleep_mode();
     // THE PROGRAM CONTINUES FROM HERE AFTER WAKING UP  
     sleep_disable();
+    //reset user state snice turning back on
+    //probably should reset other stuff here too
+    userSleepState = 0;
     detachInterrupt(digitalPinToInterrupt(3));
 }  
 
@@ -248,6 +238,22 @@ void pinInterrupt()
 
 
 // ======================== IR ==============================
+void irHandler(){
+  //for debug, just blast IR every X seconds
+  if (millis() - irDebugTime > irDebugDelay) {
+    irDebugTime = millis();
+#if DEBUG == 2
+    digitalWrite(13, LOW);
+    delay(100);
+    digitalWrite(13, HIGH);
+#endif
+    IR_transmit_pwr();
+  }
+  if(userReallyAsleep){
+//    IR_transmit_pwr();
+  }
+}
+
 void pulseIR(long microsecs) {
   while (microsecs > 0) {
     // 38 kHz is about 13 microseconds high and 13 microseconds low
