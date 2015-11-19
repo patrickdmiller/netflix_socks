@@ -51,7 +51,7 @@ volatile bool cpuSleepFlag = true;
 
 int userSleepState = 0; //0 awake, 1 falling asleep, 2 asleep
 
-unsigned long nextReadTime, windowTime, irDebugTime;
+unsigned long nextReadTime, windowTime, irDebugTime, cpuAwoken;
 int readDelay = 50; //read accelerometer every 50 ms
 int windowDelay = 2000; //compute displacement every window
 int irDebugDelay = 2000;
@@ -68,6 +68,7 @@ int consecutivePossibleSleeps = 0;
 int threshold = 500; //amount of movement that sleep is less than
 int thresholdTime = 1; // in minutes
 
+bool state = false;
 
 // ======================== SETUP ==============================
 void setup() {
@@ -79,16 +80,18 @@ void setup() {
   windowTime = nextReadTime;
   //indicator light
   indicator.begin();
-  indicator.setBrightness(40); 
+  indicator.setBrightness(100); 
   //debug lcd
   lcd.begin(16, 2);
+  //start asleep
+  cpuSleepNow();
 }
 
 // ======================== LOOP ==============================
 
 void loop() {
   indicatorHandler();
-  cpuSleepHandler();
+  softSwitchHandler();
 
   //if a window time is up, make it a new window for a sliding window average
   if (millis() - windowTime > windowDelay) {
@@ -99,16 +102,30 @@ void loop() {
   //if we've reached the readDelay, read accelerometer
   if (millis() - nextReadTime > readDelay) {
     nextReadTime = millis();
-    accelerometerHandler();
+//    accelerometerHandler();
   }
   
   //for debug, just blast IR every X seconds
   if (millis() - irDebugTime > irDebugDelay) {
-    IR_transmit_pwr();
+//    IR_transmit_pwr();
   }
   
   //a little delay
-  delay(5);
+  delay(100);
+  digitalWrite(IR_PIN, HIGH);
+  delay(100);
+      IR_transmit_pwr();
+  digitalWrite(IR_PIN, LOW);
+    delay(1000);
+
+}
+void softSwitchHandler(){
+  if(digitalRead(SOFT_SWITCH_PIN) == LOW && millis()-cpuAwoken > 1000){
+    //its held down. 
+    cpuSleepNow();
+  }else{
+  
+  }
 }
 
 // ======================== ACCELEROMETER ==============================
@@ -177,15 +194,10 @@ void indicatorHandler(){
 
 // ======================== CPU SLEEP ==============================
 
-void cpuSleepHandler(){
-  if (millis() > 5000 && cpuSleepFlag) {
-    cpuSleepNow();
-  }
-}
-
 void cpuSleepNow() {  
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);   // sleep mode is set here  
     sleep_enable();          // enables the sleep bit in the mcucr register  
+    indicator.clear();
     attachInterrupt(digitalPinToInterrupt(3),pinInterrupt, LOW); // use interrupt 0 (pin 2) and run function  
     sleep_mode();            // here the device is actually put to sleep!!  
     // THE PROGRAM CONTINUES FROM HERE AFTER WAKING UP  
@@ -199,6 +211,7 @@ void pinInterrupt()
 //    detachInterrupt(digitalPinToInterrupt(3));  
 //    attachInterrupt(digitalPinToInterrupt(3), pinInterrupt, HIGH);  
     cpuSleepFlag = false;
+    cpuAwoken = millis();
 }  
 
 
