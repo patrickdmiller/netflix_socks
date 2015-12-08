@@ -50,6 +50,7 @@ int consecutivePossibleSleeps = 0; //consecutive windows where possibly asleep.
 
 // ======================== SETUP ==============================
 void setup() {
+  //warning: If you connect an external voltage reference to the AREF pin, you must do the following before calling analogRead().
   analogReference(EXTERNAL); //aref reference voltage
   //setup pins
   pinMode(SOFT_SWITCH_PIN, INPUT);
