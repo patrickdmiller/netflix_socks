@@ -32,12 +32,13 @@ We take this sum over a window of time. If the sum < threshold, then the user wi
 if the user is in userSleepState1 for consecutive windows for consecutiveThresholdTime, then we move into userSleepState of 2
 we then notify the user with a red light. if the user does not surpase the threshold before the userReallyAsleepDelay is reached, then the user is considered asleep.
 */
-unsigned long nextReadTime, windowTime, cpuAwoken, userReallyAsleepStart;
+unsigned long nextReadTime, windowTime, cpuAwoken, userReallyAsleepStart, indicatorPulseTime;
+int indicatorPulseDelay = 5; //bigger this is, the slower it will pulse.
 int readDelay = 50; //read accelerometer every x ms
 int windowDelay = 1500; //compute displacement every window of time
-int userReallyAsleepDelay = 1 * 60 * 1000; // 1 minute
+int userReallyAsleepDelay = `5000;//1 * 60 * 1000; // 1 minute
 int threshold = 50; //amount of movement that sleep is less than. this is a sum magnitude so the lower the window, the lower this should be. This can be converted to fn of window time.
-int consecutiveThresholdTime = 30; // in seconds
+int consecutiveThresholdTime =1;// 30; // in seconds
 int userSleepState = 0; //0 awake, 1 possible asleep, 2 asleep
 bool userReallyAsleep = false; //flag is set after sleep is 'confirmed'
 bool newWindow = true; //when a new window is hit
@@ -61,7 +62,7 @@ void setup() {
   windowTime = nextReadTime;
   //indicator light
   indicator.begin();
-  indicator.setBrightness(100); //pick a good brightness 
+  indicator.setBrightness(50); //pick a good brightness 
   //start with cpu sleep
   cpuSleepNow();
 }
@@ -70,7 +71,10 @@ void setup() {
 void loop() {
   
   //everthing broken up into seperate functions to keep things simple.
-  indicatorHandler();
+  if(millis() - indicatorPulseTime > indicatorPulseDelay){
+    indicatorPulseTime = millis();
+    indicatorHandler();
+  }
   softSwitchHandler();
   sleepHandler();
   irHandler();
@@ -149,11 +153,10 @@ void indicatorHandler(){
   //pulse the indicator for whichever color it is. can change what the pulse looks like here. 
   colorState+=colorPulseIncrement;
   if(colorState < 1){
-    colorPulseIncrement = 0;
+    colorPulseIncrement = 1;
   }else if(colorState >254){
-    colorPulseIncrement = 0;
+    colorPulseIncrement = -1;
   }
-  colorState = 255;
   indicator.setPixelColor(0,colorState * colors[userSleepState][0], colorState * colors[userSleepState][1], colorState * colors[userSleepState][2]);
   indicator.show();
 }
