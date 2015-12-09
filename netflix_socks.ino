@@ -37,9 +37,9 @@ unsigned long nextReadTime, windowTime, cpuAwoken, userReallyAsleepStart, indica
 int indicatorPulseDelay = 5; //bigger this is, the slower it will pulse.
 int readDelay = 50; //read accelerometer every x ms
 int windowDelay = 1500; //compute displacement every window of time
-long userReallyAsleepDelay = 1 * 60 * 1000; // 1 minute
-int threshold = 50; //amount of movement that sleep is less than. this is a sum magnitude so the lower the window, the lower this should be. This can be converted to fn of window time.
-int consecutiveThresholdTime = 30; // in seconds
+unsigned long userReallyAsleepDelay = 60000UL; // 1 minute in milliseconds, change as needed
+int threshold = 50; //amount of movement that sleep is less than. this is a sum magnitude so the lower the window, the lower this should be. This can be converted to fn of window time. Change as needed
+int consecutiveThresholdTime = 30; // in seconds, change as needed
 int userSleepState = 0; //0 awake, 1 possible asleep, 2 asleep
 bool userReallyAsleep = false; //flag is set after sleep is 'confirmed'
 bool newWindow = true; //when a new window is hit
