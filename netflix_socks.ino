@@ -2,7 +2,7 @@
 // ======================== LIBS ==============================
 #include <avr/power.h>
 #include <avr/sleep.h>
-#include <Adafruit_NeoPixel.h>
+#include <Adafruit_NeoPixel.h> //https://github.com/adafruit/Adafruit_NeoPixel
 
 // ======================== PINS ==============================
 //for the indicator light its a neopixel
