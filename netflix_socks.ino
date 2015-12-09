@@ -22,7 +22,7 @@ int pulse_widths[NUM_PULSES][2] = {{4716,2416},{572,628},{568,628},{572,616},{58
 
 // ======================== VARS ==============================
 Adafruit_NeoPixel indicator = Adafruit_NeoPixel(1, INDICATOR_PIN);
-uint8_t colors[3][3] = {{1, 1, 1}, {1, 0, 1}, {1, 0, 0}}; //color multiplier per state, 1,1,1 is white, 1,0,0, is red, etc.
+uint8_t colors[3][3] = {{1, 1, 1}, {0, 0, 1}, {1, 0, 0}}; //color multiplier per state, 1,1,1 is white, 1,0,0, is red, etc. Something like {{1, 1, 1}, {0, 0, 1}, {1, 0, 0}}; is nice for debug to see it go into userSleepState 1
 uint8_t colorState = 255;
 uint8_t colorPulseIncrement = -1;
 volatile bool cpuSleepFlag = true;
@@ -31,14 +31,15 @@ The way this works is we keep a running sum of acceleration magnitude for all th
 We take this sum over a window of time. If the sum < threshold, then the user will move into userSleepState of 1.
 if the user is in userSleepState1 for consecutive windows for consecutiveThresholdTime, then we move into userSleepState of 2
 we then notify the user with a red light. if the user does not surpase the threshold before the userReallyAsleepDelay is reached, then the user is considered asleep.
+There are many ways to handle this, consider this a starting point.
 */
 unsigned long nextReadTime, windowTime, cpuAwoken, userReallyAsleepStart, indicatorPulseTime;
 int indicatorPulseDelay = 5; //bigger this is, the slower it will pulse.
 int readDelay = 50; //read accelerometer every x ms
 int windowDelay = 1500; //compute displacement every window of time
-int userReallyAsleepDelay = `5000;//1 * 60 * 1000; // 1 minute
+long userReallyAsleepDelay = 1 * 60 * 1000; // 1 minute
 int threshold = 50; //amount of movement that sleep is less than. this is a sum magnitude so the lower the window, the lower this should be. This can be converted to fn of window time.
-int consecutiveThresholdTime =1;// 30; // in seconds
+int consecutiveThresholdTime = 30; // in seconds
 int userSleepState = 0; //0 awake, 1 possible asleep, 2 asleep
 bool userReallyAsleep = false; //flag is set after sleep is 'confirmed'
 bool newWindow = true; //when a new window is hit
