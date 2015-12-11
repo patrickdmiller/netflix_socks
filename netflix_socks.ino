@@ -27,7 +27,7 @@ LiquidCrystal lcd(5, 6 , 10, 11, 12, 13);
 
 // ======================== VARS ==============================
 Adafruit_NeoPixel indicator = Adafruit_NeoPixel(1, INDICATOR_PIN);
-uint8_t colors[3][3] = {{1, 1, 1}, {0, 0, 1}, {1, 0, 0}}; //color multiplier per state, 1,1,1 is white, 1,0,0, is red, etc. Something like {{1, 1, 1}, {0, 0, 1}, {1, 0, 0}}; is nice for debug to see it go into userSleepState 1
+uint8_t colors[3][3] = {{1, 1, 1}, {1, 1, 1}, {1, 0, 0}}; //color multiplier per state, 1,1,1 is white, 1,0,0, is red, etc. Something like {{1, 1, 1}, {0, 0, 1}, {1, 0, 0}}; is nice for debug to see it go into userSleepState 1
 uint8_t colorState = 255;
 uint8_t colorPulseIncrement = -1;
 volatile bool cpuSleepFlag = true;
@@ -68,7 +68,7 @@ void setup() {
   windowTime = nextReadTime;
   //indicator light
   indicator.begin();
-  indicator.setBrightness(50); //pick a good brightness 
+  indicator.setBrightness(50); //pick a good brightness the brighter, the more power.
   //start with cpu sleep
   cpuSleepNow();
 }
